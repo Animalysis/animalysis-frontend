@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Activity, Heart, MapPin, TrendingUp, Users, Zap } from "lucide-react";
+import { Activity, Heart, MapPin, TrendingUp, Users, Zap, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 import AnimalCard from "@/components/dashboard/AnimalCard";
 import StatsCard from "@/components/dashboard/StatsCard";
 import AddAnimalDialog from "@/components/dashboard/AddAnimalDialog";
 import ActivityChart from "@/components/dashboard/ActivityChart";
-import heroImage from "@/assets/hero-pets.jpg";
 
 const initialAnimals = [
   {
@@ -52,7 +52,7 @@ const initialAnimals = [
   }
 ];
 
-const Index = () => {
+const Dashboard = () => {
   const [animals, setAnimals] = useState(initialAnimals);
 
   const handleAddAnimal = (newAnimal: any) => {
@@ -71,41 +71,35 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-health-primary/5">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
-                Track Your <span className="bg-gradient-primary bg-clip-text text-transparent">Animals'</span> Health
-              </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Monitor vitals, track activities, and keep your beloved animals healthy with our comprehensive fitness tracker.
-              </p>
-              <div className="flex space-x-4">
-                <AddAnimalDialog onAddAnimal={handleAddAnimal} />
-                <Button variant="outline" size="lg" className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white">
-                  View Demo
-                </Button>
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <nav className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Link to="/">
+              <Button variant="outline" size="sm" className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <Heart className="w-6 h-6 text-white" />
               </div>
-            </div>
-            <div className="relative">
-              <img 
-                src={heroImage} 
-                alt="Happy pets with health tracking"
-                className="rounded-2xl shadow-hover animate-float"
-              />
-              <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-secondary rounded-full flex items-center justify-center animate-bounce-gentle">
-                <Heart className="w-8 h-8 text-white" />
-              </div>
+              <span className="text-2xl font-bold">Dashboard</span>
             </div>
           </div>
-        </div>
-      </div>
+          <AddAnimalDialog onAddAnimal={handleAddAnimal} />
+        </nav>
+      </header>
 
-      {/* Stats Overview */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 pb-12">
+        {/* Welcome Section */}
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
+          <p className="text-xl text-muted-foreground">Here's what's happening with your animals today.</p>
+        </div>
+
+        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <StatsCard
             title="Total Animals"
@@ -193,4 +187,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Dashboard;
