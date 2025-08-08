@@ -8,26 +8,48 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 248 100% 99%;
+    --foreground: 215 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 35 100% 65%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 268 75% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Health & Activity Colors */
+    --health-primary: 142 70% 45%;
+    --health-secondary: 35 100% 65%;
+    --health-accent: 268 75% 65%;
+    --health-warning: 25 95% 53%;
+    --health-success: 142 70% 45%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 70% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(35 100% 65%), hsl(35 100% 75%));
+    --gradient-hero: linear-gradient(135deg, hsl(142 70% 45%), hsl(268 75% 65%));
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+
+    /* Shadows */
+    --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.15);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -56,26 +78,39 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 215 25% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 215 25% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 215 25% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 142 70% 55%;
+    --primary-foreground: 215 25% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 35 100% 70%;
+    --secondary-foreground: 215 25% 8%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 268 75% 70%;
+    --accent-foreground: 215 25% 8%;
+
+    /* Dark mode health colors */
+    --health-primary: 142 70% 55%;
+    --health-secondary: 35 100% 70%;
+    --health-accent: 268 75% 70%;
+    --health-warning: 25 95% 58%;
+    --health-success: 142 70% 55%;
+
+    /* Dark gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 70% 55%), hsl(142 70% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(35 100% 70%), hsl(35 100% 80%));
+    --gradient-hero: linear-gradient(135deg, hsl(142 70% 55%), hsl(268 75% 70%));
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
