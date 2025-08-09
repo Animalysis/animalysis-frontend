@@ -6,6 +6,7 @@ import AnimalCard from "@/components/dashboard/AnimalCard";
 import StatsCard from "@/components/dashboard/StatsCard";
 import AddAnimalDialog from "@/components/dashboard/AddAnimalDialog";
 import ActivityChart from "@/components/dashboard/ActivityChart";
+import QuickActions from "@/components/dashboard/QuickActions";
 
 const initialAnimals = [
   {
@@ -60,8 +61,7 @@ const Dashboard = () => {
   };
 
   const handleViewDetails = (id: string) => {
-    // TODO: Navigate to animal details page
-    console.log("View details for animal:", id);
+    window.location.href = `/animal/${id}`;
   };
 
   const totalAnimals = animals.length;
@@ -154,6 +154,11 @@ const Dashboard = () => {
               trend={{ value: 3, isPositive: true }}
             />
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-12">
+          <QuickActions />
         </div>
 
         {/* Animals Grid */}
