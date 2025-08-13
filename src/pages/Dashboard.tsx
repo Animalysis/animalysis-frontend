@@ -7,6 +7,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import AddAnimalDialog from "@/components/dashboard/AddAnimalDialog";
 import ActivityChart from "@/components/dashboard/ActivityChart";
 import QuickActions from "@/components/dashboard/QuickActions";
+import AnimalFactCard from "@/components/dashboard/AnimalFactCard";
 
 const initialAnimals = [
   {
@@ -153,6 +154,7 @@ const Dashboard = () => {
               gradient="bg-health-success"
               trend={{ value: 3, isPositive: true }}
             />
+            <AnimalFactCard />
           </div>
         </div>
 
