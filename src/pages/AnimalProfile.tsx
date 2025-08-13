@@ -11,6 +11,7 @@ import {
   Thermometer, Droplets, Clock, Target, TrendingUp,
   Stethoscope, Pill, FileText, Camera
 } from "lucide-react";
+import AiChatBubble from "@/components/dashboard/AiChatBubble";
 
 const AnimalProfile = () => {
   const { id } = useParams();
@@ -379,6 +380,9 @@ const AnimalProfile = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* AI Chat Bubble */}
+      <AiChatBubble animalName={animal.name} animalSpecies={animal.species} />
     </div>
   );
 };
