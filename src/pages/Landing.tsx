@@ -1,42 +1,77 @@
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Activity, MapPin, Shield, Smartphone, BarChart3, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import {
+  Heart,
+  Activity,
+  MapPin,
+  Shield,
+  Smartphone,
+  BarChart3,
+  ArrowRight,
+} from "lucide-react";
 import heroImage from "@/assets/hero-pets.jpg";
 
 const Landing = () => {
+  const navigate = useNavigate();
+  const { isSignedIn, isLoaded } = useAuth();
+  const [redirected, setRedirected] = useState(false);
   const features = [
     {
       icon: Heart,
       title: "Health Monitoring",
-      description: "Track vital signs, heart rate, and overall health status of all your animals in real-time."
+      description:
+        "Track vital signs, heart rate, and overall health status of all your animals in real-time.",
     },
     {
       icon: Activity,
       title: "Activity Tracking",
-      description: "Monitor daily activities, calories burned, exercise routines, and movement patterns."
+      description:
+        "Monitor daily activities, calories burned, exercise routines, and movement patterns.",
     },
     {
       icon: MapPin,
       title: "Location Tracking",
-      description: "Keep track of where your animals are at all times with GPS location monitoring."
+      description:
+        "Keep track of where your animals are at all times with GPS location monitoring.",
     },
     {
       icon: BarChart3,
       title: "Analytics & Insights",
-      description: "Get detailed reports and insights about your animals' health and activity trends."
+      description:
+        "Get detailed reports and insights about your animals' health and activity trends.",
     },
     {
       icon: Shield,
       title: "Health Alerts",
-      description: "Receive instant notifications when your animals' vitals are outside normal ranges."
+      description:
+        "Receive instant notifications when your animals' vitals are outside normal ranges.",
     },
     {
       icon: Smartphone,
       title: "Mobile Ready",
-      description: "Access your animal data anywhere with our responsive, mobile-first design."
-    }
+      description:
+        "Access your animal data anywhere with our responsive, mobile-first design.",
+    },
   ];
+
+  // Redirect signed-in users to dashboard using effect
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate]);
+
+  // Show loading fallback while Clerk is loading
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-xl">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-health-primary/5">
@@ -51,11 +86,21 @@ const Landing = () => {
               PetFit Pro
             </span>
           </div>
-          <Link to="/dashboard">
-            <Button className="bg-gradient-primary hover:bg-gradient-secondary transition-all duration-300">
-              Go to Dashboard
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/sign-in">
+              <Button className="bg-gradient-primary hover:bg-gradient-secondary transition-all duration-300">
+                Login
+              </Button>
+            </Link>
+            <Link to="/sign-up">
+              <Button
+                variant="outline"
+                className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white transition-all duration-300"
+              >
+                Sign Up
+              </Button>
+            </Link>
+          </div>
         </nav>
       </header>
 
@@ -71,41 +116,60 @@ const Landing = () => {
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
-                The most comprehensive animal health and fitness tracking platform. Monitor vitals, track activities, and ensure your beloved animals stay healthy and happy.
+                The most comprehensive animal health and fitness tracking
+                platform. Monitor vitals, track activities, and ensure your
+                beloved animals stay healthy and happy.
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/dashboard">
-                <Button size="lg" className="bg-gradient-primary hover:bg-gradient-secondary transition-all duration-300 text-lg px-8 py-6">
-                  Start Tracking
+              <Link to="/sign-in">
+                <Button
+                  size="lg"
+                  className="bg-gradient-primary hover:bg-gradient-secondary transition-all duration-300 text-lg px-8 py-6"
+                >
+                  Login
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white text-lg px-8 py-6">
-                Watch Demo
-              </Button>
+              <Link to="/sign-up">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white text-lg px-8 py-6"
+                >
+                  Sign Up
+                </Button>
+              </Link>
             </div>
 
             <div className="flex items-center space-x-8 pt-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-health-primary">10K+</div>
-                <div className="text-sm text-muted-foreground">Happy Animals</div>
+                <div className="text-3xl font-bold text-health-primary">
+                  10K+
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Happy Animals
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-health-secondary">99.9%</div>
+                <div className="text-3xl font-bold text-health-secondary">
+                  99.9%
+                </div>
                 <div className="text-sm text-muted-foreground">Uptime</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-health-accent">24/7</div>
+                <div className="text-3xl font-bold text-health-accent">
+                  24/7
+                </div>
                 <div className="text-sm text-muted-foreground">Monitoring</div>
               </div>
             </div>
           </div>
-          
+
           <div className="relative">
-            <img 
-              src={heroImage} 
+            <img
+              src={heroImage}
               alt="Happy pets with health tracking"
               className="rounded-3xl shadow-hover animate-float w-full"
             />
@@ -129,19 +193,25 @@ const Landing = () => {
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Our comprehensive platform provides all the tools you need to monitor, track, and maintain your animals' health and fitness.
+            Our comprehensive platform provides all the tools you need to
+            monitor, track, and maintain your animals' health and fitness.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="group border border-white/20 bg-gradient-glass backdrop-blur-sm hover:shadow-hover transition-all duration-300">
+            <Card
+              key={index}
+              className="group border border-white/20 bg-gradient-glass backdrop-blur-sm hover:shadow-hover transition-all duration-300"
+            >
               <CardContent className="p-8 space-y-4">
                 <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <feature.icon className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -157,16 +227,20 @@ const Landing = () => {
               <span className="block">Animal Care?</span>
             </h2>
             <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Join thousands of animal owners who trust PetFit Pro to keep their beloved companions healthy and happy.
+              Join thousands of animal owners who trust PetFit Pro to keep their
+              beloved companions healthy and happy.
             </p>
-            <Link to="/dashboard">
-              <Button size="lg" className="bg-white text-health-primary hover:bg-white/90 text-lg px-12 py-6 font-semibold">
+            <Link to="/sign-up">
+              <Button
+                size="lg"
+                className="bg-white text-health-primary hover:bg-white/90 text-lg px-12 py-6 font-semibold"
+              >
                 Get Started Today
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
           </div>
-          
+
           {/* Background decoration */}
           <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-bounce-gentle"></div>
           <div className="absolute bottom-10 right-10 w-16 h-16 bg-white/10 rounded-full animate-float"></div>

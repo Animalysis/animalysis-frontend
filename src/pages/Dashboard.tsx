@@ -1,6 +1,15 @@
 import { useState } from "react";
+import { useClerk } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
-import { Activity, Heart, MapPin, TrendingUp, Users, Zap, ArrowLeft } from "lucide-react";
+import {
+  Activity,
+  Heart,
+  MapPin,
+  TrendingUp,
+  Users,
+  Zap,
+  ArrowLeft,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimalCard from "@/components/dashboard/AnimalCard";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -25,7 +34,7 @@ const initialAnimals = [
     status: "active" as const,
   },
   {
-    id: "2", 
+    id: "2",
     name: "Whiskers",
     species: "cat",
     breed: "Maine Coon",
@@ -46,12 +55,12 @@ const initialAnimals = [
     age: 8,
     weight: 450,
     image: "",
-    lastActivity: "1 hour ago", 
+    lastActivity: "1 hour ago",
     location: "Stable",
     heartRate: 40,
     caloriesBurned: 850,
     status: "active" as const,
-  }
+  },
 ];
 
 const Dashboard = () => {
@@ -66,9 +75,18 @@ const Dashboard = () => {
   };
 
   const totalAnimals = animals.length;
-  const avgHeartRate = Math.round(animals.reduce((sum, animal) => sum + animal.heartRate, 0) / animals.length);
-  const totalCalories = animals.reduce((sum, animal) => sum + animal.caloriesBurned, 0);
-  const activeAnimals = animals.filter(animal => animal.status === "active").length;
+  const avgHeartRate = Math.round(
+    animals.reduce((sum, animal) => sum + animal.heartRate, 0) / animals.length
+  );
+  const totalCalories = animals.reduce(
+    (sum, animal) => sum + animal.caloriesBurned,
+    0
+  );
+  const activeAnimals = animals.filter(
+    (animal) => animal.status === "active"
+  ).length;
+
+  const { signOut } = useClerk();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-health-primary/5">
@@ -77,7 +95,11 @@ const Dashboard = () => {
         <nav className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <Link to="/">
-              <Button variant="outline" size="sm" className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-health-primary text-health-primary hover:bg-health-primary hover:text-white"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
               </Button>
@@ -89,7 +111,17 @@ const Dashboard = () => {
               <span className="text-2xl font-bold">Dashboard</span>
             </div>
           </div>
-          <AddAnimalDialog onAddAnimal={handleAddAnimal} />
+          <div className="flex items-center gap-2">
+            <AddAnimalDialog onAddAnimal={handleAddAnimal} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-health-warning text-health-warning hover:bg-health-warning hover:text-white"
+              onClick={() => signOut()}
+            >
+              Logout
+            </Button>
+          </div>
         </nav>
       </header>
 
@@ -97,7 +129,9 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
-          <p className="text-xl text-muted-foreground">Here's what's happening with your animals today.</p>
+          <p className="text-xl text-muted-foreground">
+            Here's what's happening with your animals today.
+          </p>
         </div>
 
         {/* Stats Overview */}
@@ -162,12 +196,15 @@ const Dashboard = () => {
             <h2 className="text-3xl font-bold">Your Animals</h2>
             <AddAnimalDialog onAddAnimal={handleAddAnimal} />
           </div>
-          
+
           {animals.length === 0 ? (
             <div className="text-center py-16">
               <Activity className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No animals yet</h3>
-              <p className="text-muted-foreground mb-6">Add your first animal to start tracking their health and fitness.</p>
+              <p className="text-muted-foreground mb-6">
+                Add your first animal to start tracking their health and
+                fitness.
+              </p>
               <AddAnimalDialog onAddAnimal={handleAddAnimal} />
             </div>
           ) : (
