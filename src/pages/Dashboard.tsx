@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useClerk } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 import {
   Activity,
   Heart,
@@ -65,6 +66,46 @@ const initialAnimals = [
 
 const Dashboard = () => {
   const [animals, setAnimals] = useState(initialAnimals);
+  const [userName, setUserName] = useState<string>("");
+  const { user } = useUser();
+
+  // Fetch user info from backend on mount
+  useEffect(() => {
+    async function fetchUser() {
+      const token = window.localStorage.getItem("clerk_jwt");
+      // Get Clerk user info and store in localStorage
+      if (user) {
+        window.localStorage.setItem("clerk_id", user.id);
+        window.localStorage.setItem("clerk_name", user.firstName || user.fullName || "");
+      }
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      let res = await fetch(`${backendUrl}/api/users`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      let data = await res.json();
+      if (data.name) {
+        setUserName(data.name);
+      } else if (user) {
+        // If user not found, create user in DB
+        const clerkId = user.id;
+        const name = user.firstName || user.fullName || "";
+        res = await fetch(`${backendUrl}/api/users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ clerkId, name }),
+        });
+        data = await res.json();
+        if (data.name) setUserName(data.name);
+      }
+    }
+    fetchUser();
+  }, [user]);
 
   const handleAddAnimal = (newAnimal: any) => {
     setAnimals([...animals, newAnimal]);
@@ -128,7 +169,9 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 pb-12">
         {/* Welcome Section */}
         <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-2">Welcome back!</h1>
+          <h1 className="text-4xl font-bold mb-2">
+            Welcome back{userName ? `, ${userName}` : ""}!
+          </h1>
           <p className="text-xl text-muted-foreground">
             Here's what's happening with your animals today.
           </p>
