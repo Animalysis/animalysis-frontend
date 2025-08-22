@@ -20,8 +20,11 @@ import HealthRecords from "./pages/HealthRecords";
 import FeedingSchedule from "./pages/FeedingSchedule";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
+import {PetsProvider} from "@/providers/pets-provider.tsx";
+import ChatbotWidget from "@/components/chat/chatbot-widget.tsx";
 
 const queryClient = new QueryClient();
+
 
 const ProtectedRoutes = () => (
   <Routes>
@@ -61,6 +64,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <PetsProvider>
+          {/*<ChatbotWidget />*/}
+          <ChatbotWidget mock />
           <Routes>
             <Route path="/" element={<HomeRoute />} />
             <Route
@@ -88,6 +94,7 @@ const App = () => {
               }
             />
           </Routes>
+          </PetsProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
