@@ -65,7 +65,7 @@ const initialAnimals = [
 ];
 
 const Dashboard = () => {
-  const [animals, setAnimals] = useState(initialAnimals);
+  const [animals, setAnimals] = useState([]);
   const [userName, setUserName] = useState<string>("");
   const { user } = useUser();
 
@@ -105,10 +105,43 @@ const Dashboard = () => {
       }
     }
     fetchUser();
+    async function fetchPets() {
+      if (!user) return;
+      const token = window.localStorage.getItem("clerk_jwt");
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      // First, get the user_id from backend
+      const userRes = await fetch(`${backendUrl}/api/users`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const userData = await userRes.json();
+      console.log("/api/users response:", userData);
+      const userId = userData.id;
+      if (!userId) {
+        console.warn("No userId returned from backend");
+        return;
+      }
+      const res = await fetch(`${backendUrl}/api/users/${userId}/pets`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const pets = await res.json();
+        console.log("/api/users/[id]/pets response:", pets);
+        setAnimals(pets);
+      } else {
+        console.warn("Failed to fetch pets", await res.text());
+      }
+    }
+    fetchPets();
   }, [user]);
 
   const handleAddAnimal = (newAnimal: any) => {
-    setAnimals([...animals, newAnimal]);
+    setAnimals((prev) => [...prev, newAnimal]);
   };
 
   const handleViewDetails = (id: string) => {

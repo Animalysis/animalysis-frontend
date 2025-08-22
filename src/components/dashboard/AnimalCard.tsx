@@ -25,8 +25,8 @@ interface AnimalCardProps {
 
 const statusColors = {
   active: "bg-health-success text-white",
-  resting: "bg-health-accent text-white", 
-  alert: "bg-health-warning text-white"
+  resting: "bg-health-accent text-white",
+  alert: "bg-health-warning text-white",
 };
 
 const AnimalCard = ({ animal, onViewDetails }: AnimalCardProps) => {
@@ -39,8 +39,12 @@ const AnimalCard = ({ animal, onViewDetails }: AnimalCardProps) => {
               {animal.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <CardTitle className="text-lg font-semibold">{animal.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{animal.breed} • {animal.age} years</p>
+              <CardTitle className="text-lg font-semibold">
+                {animal.name}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {animal.breed} • {animal.age}yrs • {animal.weight}kg
+              </p>
             </div>
           </div>
           <Badge className={statusColors[animal.status]} variant="secondary">
@@ -48,7 +52,7 @@ const AnimalCard = ({ animal, onViewDetails }: AnimalCardProps) => {
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
@@ -58,7 +62,7 @@ const AnimalCard = ({ animal, onViewDetails }: AnimalCardProps) => {
               <p className="text-xs text-muted-foreground">Heart Rate</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Activity className="w-4 h-4 text-health-secondary" />
             <div>
@@ -67,22 +71,22 @@ const AnimalCard = ({ animal, onViewDetails }: AnimalCardProps) => {
             </div>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center space-x-2 text-sm">
             <MapPin className="w-4 h-4 text-health-accent" />
             <span className="text-muted-foreground">Location:</span>
             <span>{animal.location}</span>
           </div>
-          
+
           <div className="flex items-center space-x-2 text-sm">
             <Calendar className="w-4 h-4 text-health-accent" />
             <span className="text-muted-foreground">Last Active:</span>
             <span>{animal.lastActivity}</span>
           </div>
         </div>
-        
-        <Button 
+
+        <Button
           onClick={() => onViewDetails(animal.id)}
           className="w-full bg-gradient-primary hover:bg-gradient-secondary transition-all duration-300"
           size="sm"
