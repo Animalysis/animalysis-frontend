@@ -140,9 +140,38 @@ const Dashboard = () => {
     fetchPets();
   }, [user]);
 
-  const handleAddAnimal = (newAnimal: any) => {
-    setAnimals((prev) => [...prev, newAnimal]);
-  };
+  const handleAddAnimal = async (newAnimal: any) => {
+    // Get userId from backend (already fetched in fetchPets)
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const token = window.localStorage.getItem("clerk_jwt");
+    // Get userId from last fetch
+    const userRes = await fetch(`${backendUrl}/api/users`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const userData = await userRes.json();
+    const userId = userData.id;
+    if (!userId) {
+      console.warn("No userId returned from backend");
+      return;
+    }
+    // Send POST request to backend to add pet
+    const res = await fetch(`${backendUrl}/api/users/${userId}/pets`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newAnimal),
+    });
+    if (res.ok) {
+      const result = await res.json();
+      setAnimals((prev) => [...prev, result.pet]);
+    } else {
+      console.warn("Failed to add pet", await res.text());
+    }
+  }
 
   const handleViewDetails = (id: string) => {
     window.location.href = `/animal/${id}`;
