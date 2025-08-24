@@ -14,7 +14,7 @@ function useMockChat() {
         setTimeout(() => {
             setMessages(prev => [...prev, { role: "assistant", content: "🐶 Temp response: " + msg }]);
             setBusy(false);
-        }, 500); // Simulate 0.5s delay
+        }, 500);
     };
 
     return { messages, busy, send };
@@ -32,10 +32,10 @@ type Props = {
 export default function ChatbotWidget({
                                           mock = false,
                                           defaultOpen = false,
-                                          launcherSize = "lg",
+                                          launcherSize = "md",
                                           rememberState = true,
-                                          panelWidth = 380, // default a bit larger than w-80 (320px)
-                                          panelHeight = 320, // default message area height
+                                          panelWidth = 380,
+                                          panelHeight = 320,
                                       }: Props) {
     const { userId, pets } = usePets();
 
@@ -52,42 +52,27 @@ export default function ChatbotWidget({
     });
     useEffect(() => {
         if (!rememberState) return;
-        try {
-            localStorage.setItem(storageKey, open ? "1" : "0");
-        } catch {}
+        try { localStorage.setItem(storageKey, open ? "1" : "0"); } catch {}
     }, [open, rememberState]);
 
-    // select the first pet as default
+    // select first pet by default
     const [activePetId, setActivePetId] = useState<string | null>(null);
     useEffect(() => {
-        if (!activePetId && pets.length) {
-            setActivePetId(String(pets[0].id));
-        }
+        if (!activePetId && pets.length) setActivePetId(String(pets[0].id));
     }, [pets, activePetId]);
 
     const animalsForUI = useMemo(
-        () =>
-            pets.map(p => ({
-                id: String(p.id),
-                name: p.name,
-                species: p.species,
-            })),
+        () => pets.map(p => ({ id: String(p.id), name: p.name, species: p.species })),
         [pets]
     );
 
-    // switch between mock/live chat hook
     const { messages, busy, send } = mock
         ? useMockChat()
-        : useChat({
-            userId: userId ?? "mock-user",
-            animalId: activePetId,
-        });
+        : useChat({ userId: userId ?? "mock-user", animalId: activePetId });
 
-    if (!mock && !userId) {
-        return null;
-    }
+    if (!mock && !userId) return null;
 
-    // click outside handler
+    // click outside handler (optional)
     const panelRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
         if (!open) return;
@@ -101,27 +86,48 @@ export default function ChatbotWidget({
         return () => document.removeEventListener("mousedown", onClick);
     }, [open]);
 
-    // launcher size preset
+    // size presets — 살짝 더 작게 조정
     const sizeClass =
-        launcherSize === "xl"
-            ? "w-20 h-20 text-2xl"
-            : launcherSize === "lg"
-                ? "w-16 h-16 text-xl"
-                : "w-12 h-12 text-base";
+        launcherSize === "xl" ? "w-16 h-16 text-xl"
+            : launcherSize === "lg" ? "w-14 h-14 text-lg"
+                : "w-12 h-12 text-base"; // md
 
-    // launcher button
+    // 🎨 채팅 아이콘 (이모지 대신)
+    const ChatIcon = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            className="w-[1.3em] h-[1.3em]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+            <path d="M8 9h8M8 13h5"/>
+        </svg>
+    );
+
+    // launcher (gradient applied)
     const launcher = (
         <button
             type="button"
             onClick={() => setOpen(v => !v)}
             aria-label={open ? "Close chatbot" : "Open chatbot"}
-            className={`fixed bottom-6 right-6 z-[100000] rounded-full shadow-xl border bg-emerald-500 text-white flex items-center justify-center hover:brightness-110 ${sizeClass}`}
+            className={[
+                "fixed bottom-6 right-6 z-[100000]",
+                "rounded-full shadow-xl border text-white",
+                "bg-gradient-primary hover:bg-gradient-secondary",
+                "flex items-center justify-center transition",
+                sizeClass,
+            ].join(" ")}
         >
-            {open ? "✖" : "💬"}
+            {open ? "✖" : ChatIcon}
         </button>
     );
 
-    // chatbot widget
     const widget = open ? (
         <div
             ref={panelRef}
@@ -146,7 +152,7 @@ export default function ChatbotWidget({
             {/* body */}
             {pets.length === 0 ? (
                 <div className="p-4">
-                    <button className="w-full rounded px-3 py-2 bg-emerald-500 text-white shadow">
+                    <button className="w-full rounded px-3 py-2 bg-gradient-primary hover:bg-gradient-secondary text-white shadow">
                         Please register a pet first
                     </button>
                 </div>
@@ -164,26 +170,28 @@ export default function ChatbotWidget({
                         ))}
                     </select>
 
+                    {/* messages */}
                     <div
                         className="overflow-y-auto border rounded p-3 mb-3 bg-gray-50 text-sm"
                         style={{ height: panelHeight, minHeight: panelHeight }}
                     >
                         {messages.map((m, i) => (
                             <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-            <span
-                className={
-                    m.role === "user"
-                        ? "bg-emerald-200 px-3 py-1.5 rounded inline-block mb-1"
-                        : "bg-gray-200 px-3 py-1.5 rounded inline-block mb-1"
-                }
-            >
-              {m.content}
-            </span>
+                <span
+                    className={
+                        m.role === "user"
+                            ? "bg-emerald-200 px-3 py-1.5 rounded inline-block mb-1"
+                            : "bg-gray-200 px-3 py-1.5 rounded inline-block mb-1"
+                    }
+                >
+                  {m.content}
+                </span>
                             </div>
                         ))}
                         {busy && <div className="text-gray-400">...</div>}
                     </div>
 
+                    {/* input */}
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
@@ -200,7 +208,9 @@ export default function ChatbotWidget({
                             className="flex-1 border rounded px-3 py-2 text-sm"
                             placeholder="Ask any question!"
                         />
-                        <button className="bg-emerald-500 text-white px-4 py-2 rounded text-sm">
+                        <button
+                            className="px-4 py-2 rounded text-sm text-white bg-gradient-primary hover:bg-gradient-secondary transition"
+                        >
                             Send
                         </button>
                     </form>
