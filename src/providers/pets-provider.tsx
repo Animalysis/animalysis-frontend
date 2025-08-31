@@ -1,8 +1,18 @@
+// src/providers/pets-provider.tsx
 "use client";
-import {createContext, useContext, useEffect, useState} from "react";
-import {mockPets} from "../mock/mockPets";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useUser } from "@clerk/clerk-react";
 
-type PetRow = { id: string; name: string; species?: string; birth_date?: string; user_id: string }; // ← user_id로 통일
+type PetRow = {
+    id: string;
+    name: string;
+    species?: string;
+    breed?: string;
+    weight?: number;
+    age?: number;
+    birth_date?: string;
+    user_id: string;
+};
 
 type Ctx = {
     userId: string | null;
@@ -12,57 +22,74 @@ type Ctx = {
 };
 
 const Ctx = createContext<Ctx>({
-    userId: null, pets: [], isLoading: true, refresh: async () => {
-    }
+    userId: null,
+    pets: [],
+    isLoading: true,
+    refresh: async () => {},
 });
 
-export function PetsProvider({children}: { children: React.ReactNode }) {
+export function PetsProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useUser();
     const [userId, setUserId] = useState<string | null>(null);
     const [pets, setPets] = useState<PetRow[]>([]);
     const [isLoading, setLoading] = useState(true);
 
-    const API = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || ""; // 예: http://localhost:3000
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    async function getUser() {
-        try {
-            const res = await fetch(`${API}/api/me`, {credentials: "include"});
-            if (!res.ok) return null;
-            const me = await res.json();
-            return me?.id ?? null;
-        } catch {
-            return null;
-        }
-    }
-
-    // const refresh = async () => {
-    //     setLoading(true);
-    //     try {
-    //         const uid = await getUser();
-    //         setUserId(uid);
-    //         if (!uid) {
-    //             setPets([]);
-    //             return;
-    //         }
-    //         const res = await fetch(`${API}/api/pets`, {credentials: "include"});
-    //         // 서버: { data: [...] }
-    //         const json = await res.json();
-    //         const list = Array.isArray(json?.data) ? json.data : [];
-    //         setPets(list);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-    // using mock data instead of server APIs
     const refresh = async () => {
         setLoading(true);
         try {
-            // mock userId
-            const uid = "u1";
+            // If Clerk user is not logged in → reset and exit
+            if (!user) {
+                setUserId(null);
+                setPets([]);
+                return;
+            }
+
+            // 1) Store token & user info (same logic as Dashboard)
+            const token = window.localStorage.getItem("clerk_jwt") ?? "";
+            window.localStorage.setItem("clerk_id", user.id);
+            window.localStorage.setItem("clerk_name", user.firstName || user.fullName || "");
+
+            // 2) Fetch user from backend (if not found, Dashboard usually creates it,
+            //    but here we only need the id)
+            const uRes = await fetch(`${backendUrl}/api/users`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!uRes.ok) {
+                console.warn("[PetsProvider] /api/users failed:", uRes.status, await uRes.text());
+                setPets([]);
+                return;
+            }
+
+            const uData = await uRes.json();
+            const uid = uData?.id as string | undefined;
+            if (!uid) {
+                console.warn("[PetsProvider] no user id returned from backend");
+                setPets([]);
+                return;
+            }
             setUserId(uid);
 
-            // mockPets
-            setPets(mockPets);
+            // Fetch pets belonging to the user
+            const pRes = await fetch(`${backendUrl}/api/users/${encodeURIComponent(uid)}/pets`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!pRes.ok) {
+                console.warn("[PetsProvider] /api/users/:id/pets failed:", pRes.status, await pRes.text());
+                setPets([]);
+                return;
+            }
+
+            const list = (await pRes.json()) as unknown;
+            setPets(Array.isArray(list) ? (list as PetRow[]) : []);
+        } catch (err) {
+            console.error("[PetsProvider] fetch error:", err);
+            setPets([]);
         } finally {
             setLoading(false);
         }
@@ -70,11 +97,13 @@ export function PetsProvider({children}: { children: React.ReactNode }) {
 
     useEffect(() => {
         void refresh();
-    }, []);
+    }, [user?.id]);
 
-    return <Ctx.Provider value={{userId, pets, isLoading, refresh}}>
-        {children}
-    </Ctx.Provider>;
+    return (
+        <Ctx.Provider value={{ userId, pets, isLoading, refresh }}>
+            {children}
+        </Ctx.Provider>
+    );
 }
 
 export const usePets = () => useContext(Ctx);
