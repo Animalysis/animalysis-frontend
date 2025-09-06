@@ -19,168 +19,92 @@ import ActivityChart from "@/components/dashboard/ActivityChart";
 import QuickActions from "@/components/dashboard/QuickActions";
 import AnimalFactCard from "@/components/dashboard/AnimalFactCard";
 
-const initialAnimals = [
-  {
-    id: "1",
-    name: "Buddy",
-    species: "dog",
-    breed: "Golden Retriever",
-    age: 3,
-    weight: 30.5,
-    image: "",
-    lastActivity: "30 minutes ago",
-    location: "Backyard",
-    heartRate: 85,
-    caloriesBurned: 420,
-    status: "active" as const,
-  },
-  {
-    id: "2",
-    name: "Whiskers",
-    species: "cat",
-    breed: "Maine Coon",
-    age: 5,
-    weight: 6.2,
-    image: "",
-    lastActivity: "2 hours ago",
-    location: "Living Room",
-    heartRate: 180,
-    caloriesBurned: 150,
-    status: "resting" as const,
-  },
-  {
-    id: "3",
-    name: "Luna",
-    species: "horse",
-    breed: "Arabian",
-    age: 8,
-    weight: 450,
-    image: "",
-    lastActivity: "1 hour ago",
-    location: "Stable",
-    heartRate: 40,
-    caloriesBurned: 850,
-    status: "active" as const,
-  },
-];
-
 const Dashboard = () => {
   const [animals, setAnimals] = useState([]);
   const [userName, setUserName] = useState<string>("");
   const { user } = useUser();
+  const [loading, setLoading] = useState(true);
 
-  // Fetch user info from backend on mount
+
+  // Simple user creation after sign-in
   useEffect(() => {
-    async function fetchUser() {
-      const token = window.localStorage.getItem("clerk_jwt");
-      // Get Clerk user info and store in localStorage
-      if (user) {
-        window.localStorage.setItem("clerk_id", user.id);
-        window.localStorage.setItem("clerk_name", user.firstName || user.fullName || "");
-      }
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      let res = await fetch(`${backendUrl}/api/users`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      let data = await res.json();
-      if (data.name) {
-        setUserName(data.name);
-      } else if (user) {
-        // If user not found, create user in DB
-        const clerkId = user.id;
-        const name = user.firstName || user.fullName || "";
-        res = await fetch(`${backendUrl}/api/users`, {
+    async function createUserIfNeeded() {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+        // Simple API call to create user if needed
+        const response = await fetch(`${backendUrl}/api/users`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ clerkId, name }),
+          body: JSON.stringify({
+            clerkId: user.id,
+            name: user.firstName || user.fullName || "User"
+          }),
         });
-        data = await res.json();
-        if (data.name) setUserName(data.name);
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUserName(userData.name);
+          window.localStorage.setItem("clerk_id", user.id);
+          window.localStorage.setItem("clerk_name", userData.name);
+
+          // Fetch user's pets
+          const petsResponse = await fetch(`${backendUrl}/api/users/${userData.id}/pets`);
+          if (petsResponse.ok) {
+            const pets = await petsResponse.json();
+            setAnimals(pets);
+          }
+        }
+      } catch (error) {
+        console.error("Error creating user:", error);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchUser();
-    async function fetchPets() {
-      if (!user) return;
-      const token = window.localStorage.getItem("clerk_jwt");
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      // First, get the user_id from backend
-      const userRes = await fetch(`${backendUrl}/api/users`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const userData = await userRes.json();
-      console.log("/api/users response:", userData);
-      const userId = userData.id;
-      if (!userId) {
-        console.warn("No userId returned from backend");
-        return;
-      }
-      const res = await fetch(`${backendUrl}/api/users/${userId}/pets`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (res.ok) {
-        const pets = await res.json();
-        console.log("/api/users/[id]/pets response:", pets);
-        setAnimals(pets);
-      } else {
-        console.warn("Failed to fetch pets", await res.text());
-      }
-    }
-    fetchPets();
+
+    createUserIfNeeded();
   }, [user]);
 
   const handleAddAnimal = async (newAnimal: any) => {
-    // Get userId from backend (already fetched in fetchPets)
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
-    const token = window.localStorage.getItem("clerk_jwt");
-    // Get userId from last fetch
-    const userRes = await fetch(`${backendUrl}/api/users`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const userData = await userRes.json();
-    const userId = userData.id;
-    if (!userId) {
-      console.warn("No userId returned from backend");
-      return;
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const userId = window.localStorage.getItem("clerk_id");
+      
+      if (!userId) {
+        console.warn("No user ID found");
+        return;
+      }
+
+      const res = await fetch(`${backendUrl}/api/users/${userId}/pets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newAnimal),
+      });
+      
+      if (res.ok) {
+        const result = await res.json();
+        setAnimals((prev) => [...prev, result.pet]);
+      }
+    } catch (error) {
+      console.error("Error adding animal:", error);
     }
-    // Send POST request to backend to add pet
-    const res = await fetch(`${backendUrl}/api/users/${userId}/pets`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newAnimal),
-    });
-    if (res.ok) {
-      const result = await res.json();
-      setAnimals((prev) => [...prev, result.pet]);
-    } else {
-      console.warn("Failed to add pet", await res.text());
-    }
-  }
+  };
 
   const handleViewDetails = (id: string) => {
     window.location.href = `/animal/${id}`;
   };
 
   const totalAnimals = animals.length;
-  const avgHeartRate = Math.round(
-    animals.reduce((sum, animal) => sum + animal.heartRate, 0) / animals.length
-  );
+  const avgHeartRate = animals.length > 0 
+    ? Math.round(animals.reduce((sum, animal) => sum + animal.heartRate, 0) / animals.length)
+    : 0;
   const totalCalories = animals.reduce(
     (sum, animal) => sum + animal.caloriesBurned,
     0
@@ -190,6 +114,17 @@ const Dashboard = () => {
   ).length;
 
   const { signOut } = useClerk();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-health-primary/5 flex items-center justify-center">
+        <div className="text-center">
+          <Activity className="w-12 h-12 text-health-primary animate-spin mx-auto mb-4" />
+          <p className="text-lg text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-health-primary/5">

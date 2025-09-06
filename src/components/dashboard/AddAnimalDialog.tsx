@@ -33,7 +33,7 @@ const AddAnimalDialog = ({ onAddAnimal }: AddAnimalDialogProps) => {
   });
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.species || !formData.breed || !formData.age || !formData.weight) {
@@ -46,28 +46,29 @@ const AddAnimalDialog = ({ onAddAnimal }: AddAnimalDialogProps) => {
     }
 
     const newAnimal = {
-      id: Date.now().toString(),
       name: formData.name,
       species: formData.species,
       breed: formData.breed,
       age: parseInt(formData.age),
       weight: parseFloat(formData.weight),
-      image: "",
-      lastActivity: "2 hours ago",
-      location: "Home",
-      heartRate: Math.floor(Math.random() * 40) + 60,
-      caloriesBurned: Math.floor(Math.random() * 500) + 100,
-      status: "active" as const,
     };
 
-    onAddAnimal(newAnimal);
-    setFormData({ name: "", species: "", breed: "", age: "", weight: "" });
-    setOpen(false);
-    
-    toast({
-      title: "Animal Added!",
-      description: `${formData.name} has been added to your tracker.`,
-    });
+    try {
+      await onAddAnimal(newAnimal);
+      setFormData({ name: "", species: "", breed: "", age: "", weight: "" });
+      setOpen(false);
+      
+      toast({
+        title: "Animal Added!",
+        description: `${formData.name} has been added to your tracker.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error Adding Animal",
+        description: "Failed to add animal. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
