@@ -1,5 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { 
+  getHealthRecords, 
+  createHealthRecord, 
+  updateHealthRecord, 
+  deleteHealthRecord, 
+  getUpcomingAppointments, 
+  getRecentRecords 
+} from "@/services/healthRecords";
+import { HealthRecordResponse, HealthRecordCreate } from "@/types";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,69 +25,76 @@ import {
   Calendar as CalendarIcon, FileText, AlertTriangle, CheckCircle,
   Clock, User
 } from "lucide-react";
+import { usePets } from "@/providers/pets-provider";
 
 const HealthRecords = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [healthRecords, setHealthRecords] = useState<HealthRecordResponse[]>([]);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<HealthRecordResponse[]>([]);
+  const [recentRecords, setRecentRecords] = useState<HealthRecordResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { pets, isLoading: petsLoading } = usePets();
+  
+  // Form state
+  const [selectedAnimalId, setSelectedAnimalId] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState("");
 
-  // Mock data
-  const healthRecords = [
-    {
-      id: "1",
-      animalName: "Buddy",
-      type: "vaccination",
-      title: "Annual Vaccination",
-      description: "Rabies, DHPP vaccination completed",
-      date: "2024-01-15",
-      veterinarian: "Dr. Sarah Wilson",
-      clinic: "Happy Paws Veterinary",
-      status: "completed",
-      priority: "routine"
-    },
-    {
-      id: "2", 
-      animalName: "Whiskers",
-      type: "checkup",
-      title: "Health Checkup",
-      description: "Routine examination - All vitals normal",
-      date: "2024-01-10",
-      veterinarian: "Dr. Mike Johnson",
-      clinic: "City Animal Hospital",
-      status: "completed",
-      priority: "routine"
-    },
-    {
-      id: "3",
-      animalName: "Luna",
-      type: "treatment",
-      title: "Hoof Treatment",
-      description: "Treatment for minor hoof irritation",
-      date: "2024-01-08",
-      veterinarian: "Dr. Emily Brown",
-      clinic: "Equine Health Center",
-      status: "ongoing",
-      priority: "medium"
-    },
-    {
-      id: "4",
-      animalName: "Buddy",
-      type: "appointment",
-      title: "Dental Cleaning",
-      description: "Scheduled dental cleaning and examination",
-      date: "2024-02-15",
-      veterinarian: "Dr. Sarah Wilson",
-      clinic: "Happy Paws Veterinary", 
-      status: "scheduled",
-      priority: "routine"
+  // Fetch all health data
+  useEffect(() => {
+    const fetchHealthData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [records, appointments, recent] = await Promise.all([
+          getHealthRecords(),
+          getUpcomingAppointments(),
+          getRecentRecords()
+        ]);
+        
+        setHealthRecords(records);
+        setUpcomingAppointments(appointments);
+        setRecentRecords(recent);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch health records');
+        toast.error('Failed to load health records');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHealthData();
+  }, []);
+
+  // Handle creating a new record
+  const handleCreateRecord = async (recordData: HealthRecordCreate) => {
+    try {
+      // TODO: Replace with actual user ID from auth context
+      const recordWithUser: HealthRecordCreate = {
+        ...recordData,
+        userId: "demo-user-id" // Placeholder - should come from auth context
+      };
+      
+      const newRecord = await createHealthRecord(recordWithUser);
+      setHealthRecords(prev => [...prev, newRecord]);
+      
+      // Refresh filtered data
+      const [appointments, recent] = await Promise.all([
+        getUpcomingAppointments(),
+        getRecentRecords()
+      ]);
+      
+      setUpcomingAppointments(appointments);
+      setRecentRecords(recent);
+      
+      toast.success('Health record created successfully');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create health record');
     }
-  ];
-
-  const upcomingAppointments = healthRecords.filter(record => 
-    record.status === "scheduled" && new Date(record.date) >= new Date()
-  );
-
-  const recentRecords = healthRecords.filter(record => 
-    record.status === "completed" || record.status === "ongoing"
-  ).slice(0, 5);
+  };
 
   const getTypeIcon = (type: string) => {
     switch(type) {
@@ -146,22 +163,32 @@ const HealthRecords = () => {
                   <Label htmlFor="animal" className="text-right">
                     Animal
                   </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select animal" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="buddy">Buddy</SelectItem>
-                      <SelectItem value="whiskers">Whiskers</SelectItem>
-                      <SelectItem value="luna">Luna</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {petsLoading ? (
+                    <div className="col-span-3 h-10 bg-muted animate-pulse rounded-md"></div>
+                  ) : pets.length === 0 ? (
+                    <div className="col-span-3 text-sm text-muted-foreground">
+                      No pets found. Please add pets first.
+                    </div>
+                  ) : (
+                    <Select value={selectedAnimalId} onValueChange={setSelectedAnimalId}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select animal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pets.map((pet) => (
+                          <SelectItem key={pet.id} value={pet.id}>
+                            {pet.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="type" className="text-right">
                     Type
                   </Label>
-                  <Select>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -177,23 +204,93 @@ const HealthRecords = () => {
                   <Label htmlFor="title" className="text-right">
                     Title
                   </Label>
-                  <Input id="title" className="col-span-3" />
+                  <Input id="title" className="col-span-3" placeholder="Record title" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="description" className="text-right">
                     Description
                   </Label>
-                  <Textarea id="description" className="col-span-3" />
+                  <Textarea id="description" className="col-span-3" placeholder="Description" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="vet" className="text-right">
                     Veterinarian
                   </Label>
-                  <Input id="vet" className="col-span-3" />
+                  <Input id="vet" className="col-span-3" placeholder="Veterinarian name" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="clinic" className="text-right">
+                    Clinic
+                  </Label>
+                  <Input id="clinic" className="col-span-3" placeholder="Clinic name" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="date" className="text-right">
+                    Date
+                  </Label>
+                  <Input id="date" type="date" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="status" className="text-right">
+                    Status
+                  </Label>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="ongoing">Ongoing</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="priority" className="text-right">
+                    Priority
+                  </Label>
+                  <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="routine">Routine</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button className="bg-gradient-primary hover:bg-gradient-secondary">
+                <Button 
+                  className="bg-gradient-primary hover:bg-gradient-secondary"
+                  onClick={() => {
+                    // Get the selected animal's name
+                    const selectedAnimal = pets.find(pet => pet.id === selectedAnimalId);
+                    const selectedAnimalName = selectedAnimal?.name || '';
+                    
+                    // Get other form values
+                    const formData = {
+                      animalName: selectedAnimalName,
+                      animalId: selectedAnimalId,
+                      type: selectedType,
+                      title: (document.getElementById('title') as HTMLInputElement)?.value,
+                      description: (document.getElementById('description') as HTMLTextAreaElement)?.value,
+                      veterinarian: (document.getElementById('vet') as HTMLInputElement)?.value,
+                      clinic: (document.getElementById('clinic') as HTMLInputElement)?.value,
+                      date: (document.getElementById('date') as HTMLInputElement)?.value,
+                      status: selectedStatus,
+                      priority: selectedPriority,
+                      userId: "demo-user-id" // TODO: Replace with actual user ID
+                    };
+                    
+                    if (formData.animalId && formData.animalName && formData.type && formData.title && formData.date && formData.status && formData.priority) {
+                      handleCreateRecord(formData);
+                    } else {
+                      toast.error('Please fill in all required fields');
+                    }
+                  }}
+                >
                   Add Record
                 </Button>
               </div>
@@ -203,6 +300,13 @@ const HealthRecords = () => {
       </header>
 
       <div className="container mx-auto px-4 pb-12">
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700">
+            <AlertTriangle className="w-5 h-5 inline mr-2" />
+            {error}
+          </div>
+        )}
+        
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -219,7 +323,10 @@ const HealthRecords = () => {
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-5 h-5 text-health-success" />
                     <div>
-                      <p className="text-2xl font-bold">12</p>
+                      <p className="text-2xl font-bold">
+                        {loading ? <span className="inline-block w-8 h-6 bg-muted rounded animate-pulse"></span> : 
+                         healthRecords.filter(r => r.status === "completed").length}
+                      </p>
                       <p className="text-sm text-muted-foreground">Completed</p>
                     </div>
                   </div>
@@ -230,7 +337,10 @@ const HealthRecords = () => {
                   <div className="flex items-center space-x-2">
                     <Clock className="w-5 h-5 text-health-accent" />
                     <div>
-                      <p className="text-2xl font-bold">{upcomingAppointments.length}</p>
+                      <p className="text-2xl font-bold">
+                        {loading ? <span className="inline-block w-8 h-6 bg-muted rounded animate-pulse"></span> : 
+                         upcomingAppointments.length}
+                      </p>
                       <p className="text-sm text-muted-foreground">Upcoming</p>
                     </div>
                   </div>
@@ -241,7 +351,10 @@ const HealthRecords = () => {
                   <div className="flex items-center space-x-2">
                     <Syringe className="w-5 h-5 text-health-primary" />
                     <div>
-                      <p className="text-2xl font-bold">3</p>
+                      <p className="text-2xl font-bold">
+                        {loading ? <span className="inline-block w-8 h-6 bg-muted rounded animate-pulse"></span> : 
+                         healthRecords.filter(r => r.type === "vaccination").length}
+                      </p>
                       <p className="text-sm text-muted-foreground">Vaccinations</p>
                     </div>
                   </div>
@@ -252,7 +365,10 @@ const HealthRecords = () => {
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-health-warning" />
                     <div>
-                      <p className="text-2xl font-bold">1</p>
+                      <p className="text-2xl font-bold">
+                        {loading ? <span className="inline-block w-8 h-6 bg-muted rounded animate-pulse"></span> : 
+                         healthRecords.filter(r => r.status === "ongoing").length}
+                      </p>
                       <p className="text-sm text-muted-foreground">Ongoing</p>
                     </div>
                   </div>
@@ -269,30 +385,55 @@ const HealthRecords = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {upcomingAppointments.map((appointment) => {
-                    const Icon = getTypeIcon(appointment.type);
-                    return (
-                      <div key={appointment.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg animate-pulse">
                         <div className="flex items-center space-x-3">
-                          <Icon className="w-5 h-5 text-health-accent" />
+                          <div className="w-5 h-5 bg-muted rounded"></div>
                           <div>
-                            <h4 className="font-medium">{appointment.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.animalName} • {appointment.clinic}
-                            </p>
+                            <div className="h-4 bg-muted rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-24"></div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{appointment.date}</p>
-                          <Badge className={getStatusColor(appointment.status)} variant="secondary">
-                            {appointment.status}
-                          </Badge>
+                          <div className="h-4 bg-muted rounded w-20 mb-2"></div>
+                          <div className="h-6 bg-muted rounded w-16"></div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : upcomingAppointments.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No upcoming appointments</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {upcomingAppointments.map((appointment) => {
+                      const Icon = getTypeIcon(appointment.type);
+                      return (
+                        <div key={appointment.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <Icon className="w-5 h-5 text-health-accent" />
+                            <div>
+                              <h4 className="font-medium">{appointment.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {appointment.animalName} • {appointment.clinic}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{appointment.date}</p>
+                            <Badge className={getStatusColor(appointment.status)} variant="secondary">
+                              {appointment.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -305,30 +446,55 @@ const HealthRecords = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentRecords.map((record) => {
-                    const Icon = getTypeIcon(record.type);
-                    return (
-                      <div key={record.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg animate-pulse">
                         <div className="flex items-center space-x-3">
-                          <Icon className="w-5 h-5 text-health-primary" />
+                          <div className="w-5 h-5 bg-muted rounded"></div>
                           <div>
-                            <h4 className="font-medium">{record.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {record.animalName} • {record.description}
-                            </p>
+                            <div className="h-4 bg-muted rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-24"></div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{record.date}</p>
-                          <Badge className={getStatusColor(record.status)} variant="secondary">
-                            {record.status}
-                          </Badge>
+                          <div className="h-4 bg-muted rounded w-20 mb-2"></div>
+                          <div className="h-6 bg-muted rounded w-16"></div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : recentRecords.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent records</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentRecords.map((record) => {
+                      const Icon = getTypeIcon(record.type);
+                      return (
+                        <div key={record.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <Icon className="w-5 h-5 text-health-primary" />
+                            <div>
+                              <h4 className="font-medium">{record.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {record.animalName} • {record.description}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{record.date}</p>
+                            <Badge className={getStatusColor(record.status)} variant="secondary">
+                              {record.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -339,33 +505,59 @@ const HealthRecords = () => {
                 <CardTitle>All Appointments</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {healthRecords.filter(r => r.type === "appointment").map((appointment) => {
-                    const Icon = getTypeIcon(appointment.type);
-                    return (
-                      <div key={appointment.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg animate-pulse">
                         <div className="flex items-center space-x-3">
-                          <Icon className="w-5 h-5 text-health-accent" />
-                          <div>
-                            <h4 className="font-medium">{appointment.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.animalName} • {appointment.clinic}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Dr. {appointment.veterinarian}
-                            </p>
+                          <div className="w-5 h-5 bg-muted rounded"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-24 mb-1"></div>
+                            <div className="h-3 bg-muted rounded w-20"></div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{appointment.date}</p>
-                          <Badge className={getStatusColor(appointment.status)} variant="secondary">
-                            {appointment.status}
-                          </Badge>
+                          <div className="h-4 bg-muted rounded w-20 mb-2"></div>
+                          <div className="h-6 bg-muted rounded w-16"></div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : healthRecords.filter(r => r.type === "appointment").length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No appointments found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {healthRecords.filter(r => r.type === "appointment").map((appointment) => {
+                      const Icon = getTypeIcon(appointment.type);
+                      return (
+                        <div key={appointment.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <Icon className="w-5 h-5 text-health-accent" />
+                            <div>
+                              <h4 className="font-medium">{appointment.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {appointment.animalName} • {appointment.clinic}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Dr. {appointment.veterinarian}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{appointment.date}</p>
+                            <Badge className={getStatusColor(appointment.status)} variant="secondary">
+                              {appointment.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -376,36 +568,65 @@ const HealthRecords = () => {
                 <CardTitle>All Health Records</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {healthRecords.map((record) => {
-                    const Icon = getTypeIcon(record.type);
-                    return (
-                      <div key={record.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg animate-pulse">
                         <div className="flex items-center space-x-3">
-                          <Icon className={`w-5 h-5 ${getPriorityColor(record.priority)}`} />
-                          <div>
-                            <h4 className="font-medium">{record.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {record.animalName} • {record.description}
-                            </p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <User className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {record.veterinarian} • {record.clinic}
-                              </span>
+                          <div className="w-5 h-5 bg-muted rounded"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-24 mb-1"></div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-muted rounded"></div>
+                              <div className="h-3 bg-muted rounded w-20"></div>
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{record.date}</p>
-                          <Badge className={getStatusColor(record.status)} variant="secondary">
-                            {record.status}
-                          </Badge>
+                          <div className="h-4 bg-muted rounded w-20 mb-2"></div>
+                          <div className="h-6 bg-muted rounded w-16"></div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : healthRecords.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No health records found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {healthRecords.map((record) => {
+                      const Icon = getTypeIcon(record.type);
+                      return (
+                        <div key={record.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <Icon className={`w-5 h-5 ${getPriorityColor(record.priority)}`} />
+                            <div>
+                              <h4 className="font-medium">{record.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {record.animalName} • {record.description}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <User className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">
+                                  {record.veterinarian} • {record.clinic}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{record.date}</p>
+                            <Badge className={getStatusColor(record.status)} variant="secondary">
+                              {record.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
