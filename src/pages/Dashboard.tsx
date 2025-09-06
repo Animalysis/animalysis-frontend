@@ -52,6 +52,7 @@ const Dashboard = () => {
           setUserName(userData.name);
           window.localStorage.setItem("clerk_id", user.id);
           window.localStorage.setItem("clerk_name", userData.name);
+            window.localStorage.setItem("internal_user_id", userData.id);
 
           // Fetch user's pets
           const petsResponse = await fetch(`${backendUrl}/api/users/${userData.id}/pets`);
@@ -73,7 +74,7 @@ const Dashboard = () => {
   const handleAddAnimal = async (newAnimal: any) => {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      const userId = window.localStorage.getItem("clerk_id");
+      const userId = window.localStorage.getItem("internal_user_id");
       
       if (!userId) {
         console.warn("No user ID found");
